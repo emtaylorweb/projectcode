@@ -1,0 +1,375 @@
+<html>
+<head runat="server">
+	<title>Emily Taylor_Project 1</title>
+	<style type="text/css">
+     body {
+        }
+
+        .Buttons {
+            position: absolute;
+            height: 25px;
+            font-family: Arial, Helvetica;
+            font-size: 11pt;
+            color: #002594;
+        }
+
+        .LblInfoGray {
+            font-family: Verdana, Arial, Helvetica;
+            font-size: 10pt;
+            color: #5a5a5a;
+            position: relative;
+            text-align: left;
+            padding-top: 4px;
+        }
+
+        .TableClass {
+            font-family: Verdana, Arial, Helvetica;
+            font-size: 9.0pt;
+        }
+
+        .BaseColumn {
+            text-align: center;
+        }
+
+        .AlphaColumn {
+            width: 40px;
+            cursor: pointer;
+            border: 1px solid #002d96;
+        }
+    </style>
+	
+	
+	<script language="JavaScript" type="text/javascript">
+		var lastCell = null; 
+		
+		var TBLROWS = 20;
+		var TBLCOLUMNS = 10;
+		
+		var forms = [];
+		var localForm = [];
+		
+		var count = 0;
+		
+		function createTable(){
+			document.getElementById("spreadsheetTable").innerHTML = buildTable(TBLROWS, TBLCOLUMNS); 
+			loadTable(); 
+		}
+		
+		function buildTable(rows, columns){
+			var divHTML = "<table border='1' cellpadding='0' cellspacing='0' class='TableClass'>";
+			
+			divHTML+= "<tr><th></th>";
+			
+			for(var i = 0; i < columns; i++){
+				divHTML += "<th>" + String.fromCharCode(i + 65) + "</th>";
+			}
+			
+			divHTML += "</tr>";
+			
+			for(var x = 1; x <= rows; x++){
+				divHTML += "<tr>";
+				
+				divHTML += "<td id='"+x+"_0' class='BaseColumn'>"+x+"</td>";
+				
+				for (var i = 1; i <= columns; i++){
+					divHTML += "<td id='"+x+"_"+i+ "'class='AlphaColumn' onclick='clickCell(this)'></td>";
+				}
+				
+				divHTML += "</tr>";
+				
+			}
+			divHTML += "</table>";
+			
+			return divHTML;
+		}
+		
+		
+		function emptyTable(){
+			for(var x = 1; x <= TBLROWS; x++){
+				for(var i = 1; i <= TBLCOLUMNS; i++){
+					document.getElementById(x+"_"+i).innerHTML = "";
+				}
+			}
+			forms = [];
+			localForm = [];
+			count = 0;
+		}
+		
+		function saveTable(){
+			for(var x = 1; x <= TBLROWS; x++){
+				for(var i = 1; i<= TBLCOLUMNS; i++){
+					localStorage.setItem(x+"_"+i, document.getElementById(x+"_"+i).innerHTML); 
+				}
+			}
+			
+			localStorage.setItem("length", count);
+			for(var y = 0; y < count; y++){
+				localStorage.setItem(y + "val", forms[y]);
+				localStorage.setItem(y + "local", localForm[y].id);
+			}
+		}
+		
+		function loadTable(){
+			for(var x = 1; x <= TBLROWS; x++){
+				for(var i = 1; i <= TBLCOLUMNS; i++){
+					document.getElementById(x+"_"+i).innerHTML = localStorage.getItem(x+"_"+i);
+				}
+			}
+			count = localStorage.getItem("length");
+			for(var y = 0; y < count; y++){
+				forms[y] = localStorage.getItem(y + "val");
+				var temporaryorary = localStorage.getItem(y + "local");
+				localForm[y] = document.getElementById(temporaryorary);
+			}
+		}
+		
+		function clickCell(ref) {
+			
+			if (lastCell != null)
+				lastCell.style.backgroundColor = "white";
+
+			ref.style.backgroundColor = "lightblue";
+			lastCell = ref;
+			
+			document.getElementById("txtData").value = ref.innerHTML;
+			document.getElementById("txtData").focus();
+			document.getElementById("txtData").select();
+		}
+		
+		function recalculate(){
+			for(var i = 0; i < forms.length; i++){
+			
+				var ar = forms[i].split(",");
+				
+				var fromColumn = convert(ar[0].substr(0,1).toUpperCase());
+				fromColumn = fromColumn * 1;
+				
+				var fromRow = ar[0].substr(1,2);
+				fromRow = fromRow * 1;
+				
+				var toColumn = convert(ar[1].substr(0,1).toUpperCase());
+				toColumn = toColumn * 1;
+				
+				var toRow = ar[1].substr(1,2);
+				toRow = toRow * 1;
+				
+				var total = 0;
+				var errorCheck = false;
+				
+				if(fromColumn === toColumn){
+					if(fromRow > toRow){ 
+						var temporary = 0;
+						temporary = fromRow;
+						fromRow = toRow;
+						toRow = temporary;
+					}
+					while(fromRow <= toRow){ 
+						var cell = document.getElementById(fromRow+"_"+fromColumn).innerHTML;
+						cell = cell * 1;
+						if(!isNaN(cell)){
+							total += cell;
+							fromRow++;
+						}
+						else{ 
+							alert("Please make sure all entries are numbers!");
+							errorCheck = true;
+							break;
+						}
+					}
+					if(!errorCheck){
+						localForm[i].innerHTML = total;
+					}else{ 
+						localForm[i].innerHTML = "=SUM("+ar[0]+":"+ar[1]+")";
+					}
+				}else if(fromRow === toRow){ 
+					if(fromColumn > toColumn){
+						var temporary = 0;
+						temporary = fromColumn;
+						fromColumn = toColumn;
+						toColumn = temporary;
+					}
+					while(fromColumn <= toColumn){
+						var cell = document.getElementById(fromRow+"_"+fromColumn).innerHTML;
+						cell = cell * 1;
+						if(!isNaN(cell)){
+							total += cell;
+							fromColumn++;
+						}
+						else{
+							alert("Please make sure all entries are numbers!");
+							errorCheck = true;
+							break;
+						}
+					}
+					if(!errorCheck){
+						localForm[i].innerHTML = total;
+					}else{
+						localForm[i].innerHTML = "=SUM("+ar[0]+":"+ar[1]+")";
+					}
+				} else {
+					alert("Please make sure either your rows or columns match");
+					localForm[i].innerHTML = "";
+				}
+			}
+		}
+		
+		function validateEnter(event){
+			if(event.keyCode === 13){ 
+				lastCell.innerHTML = document.getElementById("txtData").value;
+				
+				var tbValue = lastCell.innerHTML;
+				var ar = checkPattern(tbValue); 
+				var recalculateCheck = true;
+				
+				if(ar === null){
+					for(var i = 0; i < localForm.length; i++){
+						if(lastCell  === localForm[i]){
+							localForm.splice(i, 1); 
+							forms.splice(i,1);
+						}
+					}
+					recalculate(); 
+				}else{ 
+					var fromColumn = convert(ar[1].substr(0,1).toUpperCase()); 
+					fromColumn = fromColumn * 1;
+					
+					var fromRow = ar[1].substr(1,2); 
+					fromRow = fromRow * 1;
+					
+					var toColumn = convert(ar[2].substr(0,1).toUpperCase()); 
+					toColumn = toColumn * 1;
+					
+					var toRow = ar[2].substr(1,2);
+					toRow = toRow * 1;
+					var total = 0; 
+					
+					var errorCheck = false;
+					if(fromColumn === toColumn){
+						if(fromRow > toRow){ 
+							var temporary = 0;
+							temporary = fromRow;
+							fromRow = toRow;
+							toRow = temporary;
+						}
+						while(fromRow <= toRow){ 
+							var cell = document.getElementById(fromRow+"_"+fromColumn).innerHTML; 
+							cell = cell * 1;
+							if(!isNaN(cell)){
+								total += cell; 
+								fromRow++;
+							}
+							else{
+								alert("Please make sure all entries are numbers!");
+								errorCheck = true;
+								break;
+							}
+						}
+						if(!errorCheck){ 
+							lastCell.innerHTML = total;
+						}else{ 
+							lastCell.innerHTML = "";
+						}
+					}else if(fromRow === toRow){ 
+						if(fromColumn > toColumn){ 
+							var temporary = 0;
+							temporary = fromColumn;
+							fromColumn = toColumn;
+							toColumn = temporary;
+						}
+						while(fromColumn <= toColumn){
+							var cell = document.getElementById(fromRow+"_"+fromColumn).innerHTML;
+							cell = cell * 1;
+							if(!isNaN(cell)){
+								total += cell;
+								fromColumn++;
+							}
+							else{
+								alert("Please make sure all entries are numbers!");
+								errorCheck = true;
+								break;
+							}
+						}
+						if(!errorCheck){
+							lastCell.innerHTML = total;
+						}else{
+							lastCell.innerHTML = "";
+						}
+					} else {
+						alert("Please make sure either your rows or columns match");
+						lastCell.innerHTML = "";
+					}
+					recalculate();
+				}
+			}
+		}
+		
+		function convert(input){ 
+			var out = "";
+			switch(input){ 
+				case "A":
+					out = "1";
+					break;
+				case "B":
+					out = "2";
+					break;
+				case "C":
+					out = "3";
+					break;
+				case "D":
+					out = "4";
+					break;
+				case "E":
+					out = "5";
+					break;
+				case "F":
+					out = "6";
+					break;
+				case "G":
+					out = "7";
+					break;
+				case "H":
+					out = "8";
+					break;
+				case "I":
+					out = "9";
+					break;
+				case "J":
+					out = "10";
+					break;
+			}
+			return out;
+		}
+		
+		
+		function checkPattern(tbValue){
+			var pattern = /[:|\(|\)]/; 
+			var ar = tbValue.split(pattern); 
+			var sum = ar[0].toUpperCase(); 
+
+			if(ar.length < 3){
+				return null; 
+			} else if (sum != "=SUM"){
+				return null;
+			} else{
+				forms[count] = ar[1]+","+ar[2];
+				localForm[count] = lastCell;
+				count++;
+				return ar;
+			}
+		}
+		
+			
+	</script>
+</head>
+<body onload="createTable();">	
+	<div>
+		<input type="text" id="txtData" onkeyup="validateEnter(event);"/>
+		<input type="button" onclick="saveTable();" value="Save"/>
+		<input type="button" onclick="loadTable();" value="Load"/>
+		<input type="button" onclick="emptyTable();" value="Clear"/>
+		</br></br>
+		<div id="spreadsheetTable">
+		</div>
+	</div>
+</body>
+</html>
